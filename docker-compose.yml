@@ -1,0 +1,86 @@
+services:
+  # Databases
+  postgres:
+    image: postgres:15-alpine
+    container_name: auction_postgres
+    environment:
+      POSTGRES_DB: auction_db
+      POSTGRES_USER: auction_user
+      POSTGRES_PASSWORD: auction_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auction_user -d auction_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - auction-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: auction_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - auction-network
+
+  mongodb:
+    image: mongo:6-jammy
+    container_name: auction_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: auction_user
+      MONGO_INITDB_ROOT_PASSWORD: auction_pass
+      MONGO_INITDB_DATABASE: auction_logs
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - auction-network
+
+  rabbitmq:
+    image: rabbitmq:3.11-management-alpine
+    container_name: auction_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: auction_user
+      RABBITMQ_DEFAULT_PASS: auction_pass
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    networks:
+      - auction-network
+
+  # Development tools
+  adminer:
+    image: adminer
+    container_name: auction_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - mongodb
+    networks:
+      - auction-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongodb_data:
+  rabbitmq_data:
+
+networks:
+  auction-network:
+    driver: bridge

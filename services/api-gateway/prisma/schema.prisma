@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  firstName     String
+  lastName      String
+  passwordHash  String
+  avatar        String?
+  role          UserRole @default(USER)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  auctions      Auction[]
+  bids          Bid[]
+  notifications Notification[]
+  watchedAuctions AuctionWatcher[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  auctions Auction[]
+
+  @@map("categories")
+}
+
+model Auction {
+  id           String        @id @default(cuid())
+  title        String
+  description  String
+  images       String[]
+  startingPrice Float
+  currentPrice Float
+  reservePrice Float?
+  status       AuctionStatus @default(DRAFT)
+  startTime    DateTime
+  endTime      DateTime
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Foreign keys
+  sellerId   String
+  categoryId String
+
+  // Relations
+  seller    User             @relation(fields: [sellerId], references: [id])
+  category  Category         @relation(fields: [categoryId], references: [id])
+  bids      Bid[]
+  watchers  AuctionWatcher[]
+
+  @@map("auctions")
+}
+
+model Bid {
+  id         String   @id @default(cuid())
+  amount     Float
+  isWinning  Boolean  @default(false)
+  isAutoBid  Boolean  @default(false)
+  timestamp  DateTime @default(now())
+
+  // Foreign keys
+  auctionId String
+  bidderId  String
+
+  // Relations
+  auction Auction @relation(fields: [auctionId], references: [id])
+  bidder  User    @relation(fields: [bidderId], references: [id])
+
+  @@map("bids")
+}
+
+model AuctionWatcher {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Foreign keys
+  userId    String
+  auctionId String
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id])
+  auction Auction @relation(fields: [auctionId], references: [id])
+
+  @@unique([userId, auctionId])
+  @@map("auction_watchers")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Foreign keys
+  userId String
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SELLER
+}
+
+enum AuctionStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+enum NotificationType {
+  BID_PLACED
+  BID_OUTBID
+  AUCTION_WON
+  AUCTION_ENDED
+  AUCTION_STARTED
+  PAYMENT_REQUIRED
+  PAYMENT_RECEIVED
+}

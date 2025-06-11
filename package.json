@@ -1,0 +1,63 @@
+{
+  "name": "real-time-auction-platform",
+  "version": "1.0.0",
+  "description": "Enterprise-grade real-time auction platform showcasing microservices, WebSocket bidding, GraphQL, React, and React Native",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "services/*"
+  ],
+  "scripts": {
+    "install:all": "npm install && npx lerna bootstrap",
+    "dev": "concurrently \"npm run dev:services\" \"npm run dev:apps\"",
+    "dev:services": "concurrently \"npm run dev --workspace=@auction/api-gateway\" \"npm run dev --workspace=@auction/auction-service\"",
+    "dev:apps": "npm run dev --workspace=@auction/web",
+    "build": "lerna run build",
+    "test": "lerna run test",
+    "test:e2e": "npm run test --workspace=@auction/e2e",
+    "lint": "lerna run lint",
+    "clean": "lerna run clean && lerna clean",
+    "docker:dev": "docker-compose up -d",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:down": "docker-compose down",
+    "k8s:deploy": "kubectl apply -f infrastructure/k8s/",
+    "migrate": "npm run migrate --workspace=@auction/api-gateway",
+    "seed": "npm run seed --workspace=@auction/api-gateway",
+    "setup": "npm run install:all && npm run docker:dev"
+  },
+  "devDependencies": {
+    "lerna": "^6.6.2",
+    "concurrently": "^8.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.59.7",
+    "@typescript-eslint/parser": "^5.59.7",
+    "eslint": "^8.41.0",
+    "prettier": "^2.8.8",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.2",
+    "@commitlint/cli": "^17.6.3",
+    "@commitlint/config-conventional": "^17.6.3"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "keywords": [
+    "auction",
+    "real-time",
+    "websocket",
+    "graphql",
+    "microservices",
+    "react",
+    "react-native",
+    "node.js",
+    "redis",
+    "postgresql",
+    "docker",
+    "kubernetes"
+  ],
+  "author": "Debashish Kar",
+  "license": "MIT"
+}
