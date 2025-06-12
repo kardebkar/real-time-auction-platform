@@ -1,0 +1,200 @@
+import express from 'express';
+import { ApolloServer } from 'apollo-server-express';
+import { createServer } from 'http';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+import { Redis } from 'ioredis';
+import { typeDefs } from './schema/typeDefs';
+import { resolvers } from './resolvers';
+import { Context } from './types/context';
+
+const prisma = new PrismaClient();
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
+async function startServer() {
+  const app = express();
+
+  // Enhanced CORS configuration for Apollo Studio
+  app.use(cors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3005', 
+      'http://localhost:3006',
+      'https://studio.apollographql.com',
+      'https://sandbox.apollo.dev',
+      'http://localhost:4000',
+      // Allow any localhost origin for development
+      /^http:\/\/localhost:\d+$/
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Apollo-Require-Preflight']
+  }));
+
+  // Handle preflight requests
+  app.options('*', cors());
+  
+  app.use(express.json({ limit: '10mb' }));
+
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: ({ req }): Context => {
+      console.log('\n🔍 === AUTHENTICATION DEBUG ===');
+      console.log('📋 Request URL:', req.url);
+      console.log('📋 Request method:', req.method);
+      console.log('🎫 Auth header:', req.headers.authorization);
+      
+      let user = undefined;
+      const jwtSecret = process.env.JWT_SECRET || 'secret';
+
+      if (req.headers.authorization) {
+        try {
+          const token = req.headers.authorization.startsWith('Bearer ') 
+            ? req.headers.authorization.slice(7)
+            : req.headers.authorization;
+
+          console.log('🎯 Extracted token:', token.substring(0, 50) + '...');
+
+          const payload: any = jwt.verify(token, jwtSecret);
+          console.log('✅ Token verified successfully!');
+          console.log('✅ User ID:', payload.userId);
+          
+          user = { id: payload.userId };
+          
+        } catch (err: any) {
+          console.log('❌ Token verification failed:', err.message);
+        }
+      }
+
+      console.log('🏁 Authentication result:', user ? 'AUTHENTICATED' : 'NOT AUTHENTICATED');
+      console.log('=== END AUTH DEBUG ===\n');
+
+      return { user, req, prisma, redis };
+    },
+    introspection: true,
+    playground: true, // Enable built-in playground
+    formatError: (error) => {
+      console.error('GraphQL Error:', error.message);
+      return {
+        message: error.message,
+        code: error.extensions?.code,
+        path: error.path
+      };
+    }
+  });
+
+  await server.start();
+  
+  // Apply GraphQL middleware with enhanced options
+  server.applyMiddleware({ 
+    app: app as any, 
+    path: '/graphql',
+    cors: false // We handle CORS above
+  });
+
+  const httpServer = createServer(app);
+
+  // Health endpoint
+  app.get('/health', async (req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      await redis.ping();
+
+      res.json({ 
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        services: {
+          database: 'connected',
+          redis: 'connected',
+          graphql: 'ready'
+        },
+        endpoints: {
+          graphql: '/graphql',
+          playground: '/graphql'
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: error.message
+      });
+    }
+  });
+
+  // Test JWT endpoint
+  app.post('/test-jwt', (req, res) => {
+    const { token } = req.body;
+    const jwtSecret = process.env.JWT_SECRET || 'secret';
+    
+    try {
+      const decoded = jwt.decode(token);
+      const verified = jwt.verify(token, jwtSecret);
+      
+      res.json({
+        success: true,
+        decoded,
+        verified
+      });
+    } catch (error) {
+      res.json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Test CORS endpoint
+  app.get('/test-cors', (req, res) => {
+    res.json({
+      message: 'CORS is working!',
+      origin: req.headers.origin,
+      headers: req.headers
+    });
+  });
+
+  // Root endpoint
+  app.get('/', (req, res) => {
+    res.json({
+      message: 'Real-Time Auction Platform API Gateway - Phase 1',
+      version: '1.0.0',
+      endpoints: {
+        graphql: '/graphql',
+        playground: '/graphql',
+        health: '/health',
+        testJwt: '/test-jwt',
+        testCors: '/test-cors'
+      },
+      status: 'ready'
+    });
+  });
+
+  const PORT = process.env.PORT || 4000;
+
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log('🚀 Real-Time Auction Platform - Phase 1');
+    console.log('==========================================');
+    console.log(`🎮 GraphQL endpoint: http://localhost:${PORT}/graphql`);
+    console.log(`🎮 GraphQL Playground: http://localhost:${PORT}/graphql`);
+    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`🧪 Test CORS: http://localhost:${PORT}/test-cors`);
+    console.log('==========================================');
+    console.log('✅ Server ready with enhanced CORS support!');
+    console.log('✅ Apollo Studio should now work!');
+  });
+
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    await prisma.$disconnect();
+    redis.disconnect();
+    process.exit(0);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});

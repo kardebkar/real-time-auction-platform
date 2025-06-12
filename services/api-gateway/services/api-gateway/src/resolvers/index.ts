@@ -25,11 +25,7 @@ export const resolvers = {
       if (!context.user) throw new Error('Not authenticated');
       
       return await context.prisma.user.findUnique({
-        where: { id: context.user.id },
-        include: {
-          auctions: true,
-          bids: true
-        }
+        where: { id: context.user.id }
       });
     },
 
@@ -99,7 +95,6 @@ export const resolvers = {
         throw new Error('Auction not found');
       }
 
-      // Increment view count
       await context.prisma.auction.update({
         where: { id },
         data: { viewCount: { increment: 1 } }
@@ -111,13 +106,7 @@ export const resolvers = {
     categories: async (_: any, __: any, context: Context) => {
       return await context.prisma.category.findMany({
         where: { isActive: true },
-        orderBy: { name: 'asc' },
-        include: {
-          auctions: {
-            where: { status: 'ACTIVE' },
-            take: 5
-          }
-        }
+        orderBy: { name: 'asc' }
       });
     },
 
@@ -145,7 +134,6 @@ export const resolvers = {
 
     login: async (_: any, { input }: any, context: Context) => {
       const authService = new AuthService(context.prisma);
-      // Fixed: Pass individual parameters instead of input object
       return await authService.login(input.email, input.password);
     },
 
@@ -172,8 +160,7 @@ export const resolvers = {
           category: true,
           seller: {
             select: { id: true, email: true, firstName: true, lastName: true }
-          },
-          bids: true
+          }
         }
       });
 
@@ -208,8 +195,3 @@ export const resolvers = {
     }
   }
 };
-
-// Quick test to verify the fix
-console.log('🔧 AuthService and Resolvers fixed!');
-console.log('✅ Login should now work properly');
-console.log('Restart the server with: npm run dev');

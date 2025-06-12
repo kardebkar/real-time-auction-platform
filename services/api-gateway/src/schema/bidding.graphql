@@ -1,0 +1,43 @@
+export const biddingTypeDefs = `
+  type Bid {
+    id: ID!
+    amount: Float!
+    timestamp: DateTime!
+    user: User!
+    auction: Auction!
+  }
+
+  input PlaceBidInput {
+    auctionId: ID!
+    amount: Float!
+  }
+
+  type BidError {
+    message: String!
+    auctionId: ID!
+    amount: Float!
+    timestamp: DateTime!
+  }
+
+  type AuctionUpdate {
+    id: ID!
+    currentPrice: Float!
+    bidCount: Int!
+    lastBidTime: DateTime
+  }
+
+  extend type Mutation {
+    placeBid(input: PlaceBidInput!): Bid!
+  }
+
+  extend type Query {
+    auctionBids(auctionId: ID!, limit: Int): [Bid!]!
+    currentHighestBid(auctionId: ID!): Bid
+  }
+
+  extend type Subscription {
+    bidPlaced(auctionId: ID!): Bid!
+    auctionUpdated(auctionId: ID!): AuctionUpdate!
+    bidError: BidError!
+  }
+`;

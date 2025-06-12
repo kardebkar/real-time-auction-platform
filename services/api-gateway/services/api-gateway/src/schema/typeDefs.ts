@@ -54,7 +54,6 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     description: String
-    slug: String!
     auctions: [Auction!]!
   }
 
