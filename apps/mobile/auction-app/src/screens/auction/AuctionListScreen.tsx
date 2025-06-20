@@ -14,7 +14,11 @@ import { Button } from '../../components/common/Button';
 import { Auction } from '../../utils/types';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/constants';
 
-export const AuctionListScreen = () => {
+interface AuctionListScreenProps {
+  navigation: any;
+}
+
+export const AuctionListScreen: React.FC<AuctionListScreenProps> = ({ navigation }) => {
   const { data, loading, error, refetch } = useQuery(GET_AUCTIONS, {
     variables: {
       filters: { status: 'ACTIVE' },
@@ -24,14 +28,7 @@ export const AuctionListScreen = () => {
   });
 
   const handleAuctionPress = (auction: Auction) => {
-    Alert.alert(
-      '🎯 Auction Details',
-      `${auction.title}\n\nCurrent Price: ${auction.currentPrice.toLocaleString()}\nBids: ${auction.bidCount}\nStatus: ${auction.status}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'View More', onPress: () => console.log('Navigate to details') }
-      ]
-    );
+    navigation.navigate('AuctionDetail', { auctionId: auction.id });
   };
 
   const renderAuction = ({ item }: { item: Auction }) => (

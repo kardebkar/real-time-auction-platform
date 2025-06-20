@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../services/auth/AuthContext';
 import { TabNavigator } from './TabNavigator';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { AuctionDetailScreen } from '../screens/auction/AuctionDetailScreen';
 import { View, ActivityIndicator } from 'react-native';
 import { COLORS } from '../utils/constants';
 
@@ -25,7 +26,24 @@ export const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={TabNavigator} />
+          <>
+            <Stack.Screen name="Main" component={TabNavigator} />
+            <Stack.Screen 
+              name="AuctionDetail" 
+              component={AuctionDetailScreen}
+              options={{
+                headerShown: true,
+                title: 'Auction Details',
+                headerStyle: {
+                  backgroundColor: COLORS.primary,
+                },
+                headerTintColor: '#fff',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                },
+              }}
+            />
+          </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}

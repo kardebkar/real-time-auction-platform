@@ -275,17 +275,18 @@ async function startServer() {
 
   // Enhanced CORS configuration for Apollo Studio
   app.use(cors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3005', 
-      'http://localhost:3006',
-      'https://studio.apollographql.com',
-      'https://sandbox.apollo.dev',
-      'http://localhost:4000',
-      // Allow any localhost origin for development
-      /^http:\/\/localhost:\d+$/,
-      /^https:\/\/studio\.apollographql\.com$/
-    ],
+    // origin: [
+    // //   'http://localhost:3000',
+    // //   'http://localhost:3005', 
+    // //   'http://localhost:3006',
+    // //   'https://studio.apollographql.com',
+    // //   'https://sandbox.apollo.dev',
+    // //   'http://localhost:4000',
+    // //   // Allow any localhost origin for development
+    // //   /^http:\/\/localhost:\d+$/,
+    // //   /^https:\/\/studio\.apollographql\.com$/
+    // ],
+    origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: [

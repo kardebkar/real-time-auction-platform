@@ -62,3 +62,57 @@ export const GET_CATEGORIES = gql`
     }
   }
 `;
+
+export const GET_AUCTION_DETAIL = gql`
+  query GetAuctionDetail($id: ID!) {
+    auction(id: $id) {
+      id
+      title
+      description
+      startingPrice
+      currentPrice
+      bidCount
+      endTime
+      status
+      category {
+        id
+        name
+      }
+      seller {
+        id
+        firstName
+        lastName
+      }
+      bids {
+        id
+        amount
+        timestamp
+        user {
+          id
+          firstName
+          lastName
+        }
+      }
+    }
+  }
+`;
+
+export const PLACE_BID_MUTATION = gql`
+  mutation PlaceBid($input: PlaceBidInput!) {
+    placeBid(input: $input) {
+      id
+      amount
+      timestamp
+      user {
+        id
+        firstName
+        lastName
+      }
+      auction {
+        id
+        currentPrice
+        bidCount
+      }
+    }
+  }
+`;

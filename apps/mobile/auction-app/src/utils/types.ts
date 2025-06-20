@@ -14,12 +14,13 @@ export interface Auction {
   currentPrice: number;
   bidCount: number;
   endTime: string;
-  status: 'DRAFT' | 'ACTIVE' | 'ENDED';
+  status: 'DRAFT' | 'ACTIVE' | 'ENDED' | 'SCHEDULED';
   category: {
     id: string;
     name: string;
   };
   seller: User;
+  bids?: Bid[];
 }
 
 export interface AuthContextType {
@@ -35,4 +36,15 @@ export interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
+}
+
+export interface Bid {
+  id: string;
+  amount: number;
+  timestamp: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
 }
